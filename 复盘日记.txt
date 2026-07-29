@@ -4410,3 +4410,373 @@ ABC465 D - X to Y
 我最开始的写法是使用换底公式计算，后来由于快结束了还是一直 WA 后我已急哭掏出了最后的底牌 gemini（每日作弊1/1
 gemini 其实就是将换底公式简化了，简化成了一直除就行
 所以一直除，将过程中得到的数加上开头结尾都存在 vector 里，然后双重循环暴力比对，如果相同则 ans = min(ans, i + j)，AC.
+
+---
+
+2026/7/5
+2099. 驱赶冗兵
+简单题，建边并拓排就可以了
+但是建边是很有说法的
+我的 v1 代码是直接建相邻的，但这样有一个问题，例如
+ENW
+显然，E 与 W 冲突，所以 E 是移不走的
+但是如果只建相邻的，会变成
+E -> N
+E 不会跟 W 建边，而 N 又可以直接移走，所以程序会误认为 E 也可以直接移走，这种代码提交后会只有 55pts（数据水到天花板
+所以考虑改
+我的 v2 代码是一直往后建，但是问题来了，边数会炸
+我的原代码是给每种方向都开一个单独的循环，并在里面使用动态更新的方法建边，显然会跑得快一些，但是由于码力不足，最终是听取wa声一片，gemini跟我battle过后，我翻出了它最开始的代码，一提交，竟然 AC 了？
+gemini 的代码是将四种方向一起考虑，通过循环里的判断来分支，然后直接暴力建边，但是这种暴力中有一个小优化：（洛谷网校其实讲过
+假设图是这样的
+ENSNENSNSSS
+^   ^
+两个 ^ 标出的方向相同，那么第一个 E 其实完全可以从头只连到第二个 E 去，后面的不必再连，因为如果第二个 E 能跑通，后面的定然能跑通，那么第一个 E 就不需要再考虑了。至此，我们发现，只要连到第一个同向的点即可。由于这种复杂度最劣和最优相嵌，均摊后是 O(nm)，AC.
+
+---
+
+2026/7/13
+代码部落 CSP-S 模拟赛 T1 - string
+赛时 freopen 写多测循环里了痛苦爆 0，赛后以为改了就过了，结果拿了 70（
+这道题本质上是一个比对字符环的问题，我的原做法使用了哈希，利用的是 ab 旋转后 ba 的性质，但是由于这样子每个串都要开一个前缀哈希，一个后缀哈希，加起来四个哈希数组，再加上我不想被卡，所以写了双哈希，一共八个，非常折磨人，写起来很痛苦，最后大样例过是过了，70pts
+哈希难写，有没有更高效的算法呢？有的。就在比赛的前一天晚上，我在床上思考我忘了n遍的 KMP，KMP 代码简单且玄学。本质上是优化了传统匹配算法因为在失配时处理方法不够高效所导致的额外复杂度开销，通过记录 border 实现更长的跳跃，并且通过 border 的递归性质来计算 border，总之，重思考，代码短，跟隔壁树状数组一模一样。
+由于是环匹配，很容易想到拆环成链，然后直接做字符串匹配即可。这里注意，旋转后长度变为 2 倍，所以 KMP 中的下标范围要注意（补提 WA1 原因）旋转的是 s 不是 t，所以应当将 s 复制一份而不是 t（补提 WA2 原因），改完后即可 AC。常数比哈希低，代码也比哈希短，哈希就像线段树，KMP 就像树状数组。
+AC.
+另外附 KMP 模板代码防止忘记：（仅为模板代码，match 为寻找出现的第一个下标）
+void make() {
+    int j = 0;
+    nxt[1] = 0;
+    for (int i = 2; i <= m; i++) {
+        while (j && t[i] != t[j + 1]) j = nxt[j];
+        if (t[i] == t[j + 1]) j++;
+        nxt[i] = j;
+    }
+}
+
+int match() {
+    int j = 0;
+    for (int i = 1; i <= n; i++) {
+        while (j && s[i] != t[j + 1]) j = nxt[j];
+        if (s[i] == t[j + 1]) j++;
+        if (j == n) {
+            return i - m + 1;
+        }
+    }
+}
+
+---
+
+2026/7/23
+YCYZ cr4
+
+A - Bell Heart
+构造题。
+考虑 n 为偶数的情况，显然让同种数相邻即可。（也就是构造形如 1 1 2 2 3 3 ... 的序列即可）
+你拿到了 30pts
+但是如何处理 n 为奇数的情况呢？
+赛时构造了很久勾股数，但是无果，所以面对这种情况就是输出 -1，多拿 10pts
+考虑 3^2+4^2=5^2
+利用这组勾股数进行构造即可
+也就是
+a[1] = a[10] = a[26]
+的情况
+10 - 1 = 3 ^ 2
+26 - 10 = 4 ^ 2
+26 - 1 = 5 ^ 2
+满足！
+但是问题来了（赛时没有解决）
+通过这种方式，a[2 ~ 9] 的确可以使用偶数构造法了，那 a[11 ~ 25] 呢？
+
+那就多搞一组呗（我赛时怎么没想到我服了）
+令 a[11] = a[27] 即可
+当 n < 27 时，无解
+void solve() {
+    int n;
+    cin >> n;
+    if (n % 2 == 0) {
+        for (int i = 1; i <= n; i++) {
+            cout << (i + 1) / 2 << ' ';
+        }
+        cout << '\n';
+        return;
+    }
+    if (n < 27) {
+        cout << "-1\n";
+        return;
+    }
+    int cnt = 3;
+    for (int i = 1; i <= n; i++) {
+        if ((i == 1) || (i == 10) || (i == 26)) cout << 1 << ' ';
+        else if ((i == 11) || (i == 27)) cout << 2 << ' ';
+        else {
+            cout << cnt << ' ' << cnt << ' ';
+            cnt++;
+            i++;
+        }
+    }
+}
+AC.
+
+B - Grand Gate
+赛时思路已经很接近正解了
+分数不直观，但是小数直观啊！
+考虑手玩样例 115
+转 1 贡献：0.9 - 0.1 = 0.8
+转 2 贡献：0.9 - 0.1 = 0.8 0.8 * 0.1 = 0.08
+转 3 贡献：0.9 - 0.5 = 0.4 0.4 * 0.01 = 0.004
+总共 0.884
+你发现了吗
+0.884 = 0.999 - 0.115
+赛时以为是最长不降子序列，40pts，似了
+其实这是类似一个字典序的问题，也就是说，只要能让选出的字典序尽量尽量大就可以了
+所以，优先选 0，再选 1，2，3，...
+for (int i = 0; i <= 9; i++) {
+    for (int j = pos; j < s.size(); j++) {
+        if (s[j] - '0' == i) {
+            pos = j;
+            ans = (ans * 10 % mod + (9 + '0' - s[j])) % mod;
+            cnt++;
+        }
+    }
+}
+获得答案的整数部分
+while (cnt < s.size()) { //补齐剩下的 0
+    ans = ans * 10 % mod;
+    cnt++;
+}
+cout << ans * qpow(qpow(10, s.size()), mod - 2) % mod << '\n'; //计算！
+AC.
+
+---
+
+2026/7/24
+BD202401 补给
+布吉岛为什么，这么简单的题都不能一遍过，我是肥物吗
+注意到数据范围非常的渺小，所以考虑直接 n^2 logn 暴力枚举，大循环哪个物品使用优惠机会，里面计算新的价格然后排序并计算能买多少个，然后还原。一直卡着的点其实是没有考虑到下标在排序过程中的变化，遍历就行。
+AC.
+
+---
+
+2026/7/24
+BD202314 跑步
+首先，这道题肥肠简单，我没做出来是因为我是肥物
+还是有一些思考的含金量的
+首先，我们注意到，一只猫不会追上其他猫，当且仅当他的前方没有比他跑的慢的，而我们又注意到，追上这只猫的猫，速度一定都比这只猫快。所以，题目本质上满足”他的前方没有比他跑的慢的“的位置最大差值。
+for (int i = n; i >= 1; i--) {
+    if (a[i].v <= minn) minn = a[i].v, cur = 0;
+    ans = max(ans, ++cur);
+}
+cout << ans;
+即可，非常easy
+注意以下处理这个位置相同的小trick，就是
+struct Node {
+    int p, v;
+    friend bool operator <(Node A, Node B) {
+        if (A.p == B.p) return A.v > B.v;
+        return A.p < B.p;
+    }
+} a[100005];
+这里的是按照从位置从小到大，位置相同就按照速度从大到小的顺序排的，这样就可以使得位置相同的速度快的下标靠前，那么我们又知道，靠前的一定会追上靠后的慢的，中间又都是位置相同的没有阻挡，所以自动合并。
+
+---
+
+2026/7/25
+BD202504 Left and Right
+我不会什么balabala的数学原理，所以我使用了
+打表！
+推几下便可得知是一个等差数列
+下列列出过程
+5 6
+1 2 3 4, 7 8 9, 13 14, 19
+d=1,res=4+3+2+1
+5 6 7
+1 2 3 4, 8 9
+d=2,res=4+2
+5 6 7 8
+1 2 3 4, 9
+d=3,res=4+1
+5 6 7 8 9
+1 2 3 4
+d=4>=l-1,res=l-1=4;
+5 6 7 8 9 10
+1 2 3 4
+d=5>=l-1,res=l-1=4
+其中 d=r-1
+6,7,8,9
+1 2 3 4 5, 10 11,
+d=3;res=5+2;
+其中 d=r-l
+你发现了吗？
+不会做是因为没打表
+最开始没理解求和公式后面理解了AC
+#include <bits/stdc++.h>
+#define int long long
+using namespace std;
+
+signed main() {
+    int T;
+    cin >> T;
+    while (T--) {
+        int l, r;
+        cin >> l >> r;
+        if (l == r && l != 1) cout << "infty\n";
+        else {
+            int d = r - l;
+            if (d >= l - 1) {
+                cout << l - 1 << '\n';
+                continue;
+            }
+            int a1 = (l - 1) % d, an = l - 1, xs = (l - 1) / d + 1;
+            cout << (a1 + an) * xs / 2 << '\n';
+        }
+    }
+    return 0;
+}
+
+---
+
+2026/7/28
+代码部落 20260726CSP-S 模拟赛
+T2 - triple
+这道题赛时写了个树状数组骗分……
+来讲一下这道题的思路
+首先，如何统计三元组呢？
+我们令 c[i] 为 i < x <= i + d 且 x 出现了的数量
+答案就是求 C2(c[i]) 的和（以下所有 C2(x) 均指 C(x, 2)，也就是 x(x-1)/2）
+考虑优化他！！
+维护，就是处理变化
+所以，我们要考虑的是插入与删除两种操作对答案带来了什么变化
+首先，我们维护 cnt, sum, ans 来分别记录
+区间内已经出现的整数个数
+区间内所有已出现位置的 ci 之和
+区间内所有已出现位置的 c2(ci) 之和。
+叶结点未出现时，这三个量均为 0；出现时分别为 1, ci, C2(ci)
+我们又知道，由于 C2(ci + t) = C2(ci) + tci + C2(t)
+所以可得，当一个区间 c[i] 同时增加 t 时
+ans' = ans + t * sum + C2(t) * cnt
+sum' = sum + t * cnt
+这个公式对正负 t 都有用，lzy 启动，哈哈！！！！
+一次插入 的处理顺序为：
+1. 对 [x - d, x - 1] 执行区间加；
+2. 查询 [x + 1, x + d]内的出现数量，得到 c[x]；
+3. 将位置 x 的叶结点设为出现状态。
+一次删除 的处理顺序为：
+1. 将位置 c[x] 的叶结点清零；
+2. 对 [x - d, x - 1] 执行区间减 。
+所以 1 * build, 1 * pushup, 1 * pushdown, 1 * query, 2 * update！！
+116行搞定
+#include <iostream>
+#define int long long
+#define ls (u << 1)
+#define rs (u << 1 | 1)
+#define abs(x) (x > 0 ? x : -x)
+using namespace std;
+int q, d;
+
+struct Node {
+    int l, r;
+    int cnt, sum, ans;
+    int lzy;
+} tr[800005];
+
+int C2(int x) {
+    return x * (x - 1) / 2;
+}
+
+void pushup(int u) {
+    tr[u].cnt = tr[ls].cnt + tr[rs].cnt;
+    tr[u].sum = tr[ls].sum + tr[rs].sum;
+    tr[u].ans = tr[ls].ans + tr[rs].ans;
+}
+
+void pushdown(int u) {
+    if (!tr[u].lzy) return;
+    int t = tr[u].lzy;
+    
+    tr[ls].ans += t * tr[ls].sum + C2(t) * tr[ls].cnt;
+    tr[rs].ans += t * tr[rs].sum + C2(t) * tr[rs].cnt;
+    
+    tr[ls].sum += t * tr[ls].cnt;
+    tr[rs].sum += t * tr[rs].cnt;
+    
+    tr[ls].lzy += t;
+    tr[rs].lzy += t;
+    tr[u].lzy = 0;
+}
+
+void build(int u = 1, int l = 1, int r = 200000) {
+    tr[u].l = l;
+    tr[u].r = r;
+    if (l == r) return;
+    int mid = (l + r) >> 1;
+    build(ls, l, mid);
+    build(rs, mid + 1, r);
+}
+
+int query(int l, int r, int u = 1) {
+    l = max(l, 1ll);
+    r = min(r, 200000ll);
+    if (l > r) return 0;
+    int L = tr[u].l, R = tr[u].r;
+    if (l <= L && R <= r) return tr[u].cnt;
+    else if (l > R || r < L) return 0;
+    pushdown(u);
+    return query(l, r, ls) + query(l, r, rs);
+}
+
+void updx(int pos, int ct, int sm, int as, int u = 1) {
+    if (tr[u].l == tr[u].r) {
+        tr[u].cnt = ct;
+        tr[u].sum = sm;
+        tr[u].ans = as;
+        return;
+    }
+    pushdown(u);
+    if(pos <= tr[ls].r) updx(pos, ct, sm, as, ls);
+    else updx(pos, ct, sm, as, rs);
+    pushup(u);
+}
+
+void update(int l, int r, int d, int u = 1) {
+    l = max(l, 1ll);
+    r = min(r, 200000ll); //main 不想写太多
+    if (l > r) return;
+    int L = tr[u].l, R = tr[u].r;
+    if(l <= L && R <= r) {
+        if (d > 0) {
+            tr[u].ans += tr[u].sum;
+            tr[u].sum += tr[u].cnt;
+        } else {
+            tr[u].sum -= tr[u].cnt;
+            tr[u].ans -= tr[u].sum;
+        }
+        tr[u].lzy += d;
+        return;
+    } else if (r < L || l > R) return;
+    pushdown(u);
+    update(l, r, d, ls);
+    update(l, r, d, rs);
+    pushup(u);
+}
+
+signed main() {
+    cin >> q >> d;
+    if (d == 1) {
+       while (q--) cout << "0\n";
+       return 0;
+    }
+    build();
+    for (int i = 1; i <= q; i++) {
+        int op, x;
+        cin >> op >> x;
+        if (op == 1) {
+            update(x - d, x - 1, 1);
+            int cnt = query(x + 1, x + d);
+            updx(x, 1, cnt, C2(cnt));
+        } else if (op == 2) {
+            updx(x, 0, 0, 0);
+            update(x - d, x - 1, -1);
+        }
+        cout << tr[1].ans << '\n';
+    }
+    return 0;
+}
