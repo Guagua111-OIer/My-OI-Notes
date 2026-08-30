@@ -4939,7 +4939,7 @@ BD202521 Game
 大家应该都想到了，只要坐标最大的往后挪一位，后面的再跟过来，这样一路~~苟过去~~移动过去就可以了  
 计算一下，每轮苟需要 $n$ 步，最开始坐标最大的是 $n$，我们想要让他苟到 $l - 1$，这样再走游戏就退掉了。  
 显然，从 $n$ 移动到 $l - 1$ 共需 $(l - n - 1)$ 轮，然后每轮 $n$ 次，所以就是 $n * (l - n - 1)$，这时还要再动一步让头端走到 $l$，所以总方案就是 $n * (l - n - 1) + 1$。  
-最大值，搞定！  
+最大值，搞定！
 
 我承认以下最小值的推导确实有难度，我会尽力让你们听懂，如果你一步一步跟着我走，理解起来应该不难  
 首先，一个棋子 $x$ 最多走到 $x + d$。为了让游戏进程尽量的快，我们贪心：每次直接让 $x$ 跳到 $x + d$  
@@ -6021,3 +6021,310 @@ while (now <= t && (!ql.empty() || !qr.empty())) {
 }
 if (now <= t) (ans *= qpow(b, t - now + 1)) %= mod;
 AC!
+
+---
+
+
+2026/8/26
+BD202404 110串
+考虑设计状态：
+f[i][j][k] 表示在第 i 个元素，已修改 j 次，末尾状态为 k 时的方案数（i 维需要滚掉）
+k = 0 则末尾为 0
+k = 1 则末尾为 01
+k = 2 则末尾为 11
+易得转移：（六种情况，bushi）
+啊算了都把转移告诉你们了不如直接贴转移代码：
+for (int i = 1; i <= n; i++) {
+    for (int j = 0; j <= k; j++) {
+        if (s[i] == '0') {
+            //0 -> 00, 1 -> 10
+            (f[i & 1][j][0] += f[(i - 1) & 1][j][0] + f[(i - 1) & 1][j][1]) %= mod;
+            //0 -> 01
+            if (j > 0) (f[i & 1][j][1] += f[(i - 1) & 1][j - 1][0]) %= mod;
+            //1 -> 11, 11 -> 11
+            if (j > 0) (f[i & 1][j][2] += f[(i - 1) & 1][j - 1][1] + f[(i - 1) & 1][j - 1][2]) %= mod;
+        } else {
+            //0 -> 00, 1 -> 10
+            if (j > 0) (f[i & 1][j][0] += f[(i - 1) & 1][j - 1][0] + f[(i - 1) & 1][j - 1][1]) %= mod;
+            //0 -> 01
+            (f[i & 1][j][1] += f[(i - 1) & 1][j][0]) %= mod;
+            //1 -> 11, 11 -> 11
+            (f[i & 1][j][2] += f[(i - 1) & 1][j][1] + f[(i - 1) & 1][j][2]) %= mod;
+        }
+    }
+    memset(f[(i - 1) & 1], 0, sizeof(f[(i - 1) & 1])); //清空
+}
+AC!
+
+---
+
+2026/8/28
+P9754 [CSP-S 2023] 结构体
+大模拟
+200行（但是我只写了189行
+首先是一些前置变量
+struct Type { //类型
+    string name;
+    vector <Type*> types; //包含哪些
+    vector <string> names; //成员变量名
+    int size; //大小
+    int req; //对齐要求
+    void clear() {
+        name = "";
+        types.clear();
+        names.clear();
+        size = 0;
+        req = 0;
+    }
+};
+
+Type tps[105];
+int typn;
+map <string, Type*> NameType; //名称 -> 类型
+
+struct Element { //元素
+    Type ty; //类型
+    string name; //名称
+    int begin; //开始
+    void clear() {
+        ty.clear();
+        begin = 0;
+        name = "";
+    }
+};
+Element els[105];
+int elen;
+map <string, Element*> NameEle; //名称 -> 元素
+
+int now; //当前分配到的地址末尾
+map <pii, Element*> AddrEle; //地址 -> 元素
+创建元素与类型的思维量不大，这里略过
+啥，你说思维量不大但难写？好，代码给你
+void TypeCreate(string name, int num, string t[], string s[]) {
+    Type New;
+    New.clear();
+    New.name = name;
+    for (int i = 1; i <= num; i++) {
+        New.types.push_back(NameType[t[i]]); //类型
+        New.names.push_back(s[i]); //名称
+    }
+    int pos = 0; //起始地址
+    for (Type* x: New.types) {
+        int req = x->req;
+        int siz = x->size;
+        New.req = max(New.req, req);
+        pos = (pos + req - 1) / req * req; //地址对齐
+        pos += siz; //往后走
+    }
+    pos = (pos + New.req - 1) / New.req * New.req; //再对齐
+    New.size = pos;
+    tps[++typn] = New;
+    NameType[name] = &tps[typn]; //用 &New 会出现悬空指针
+}
+
+void ElementCreate(string tyname, string elname) {
+    Element New;
+    New.clear();
+    int req = NameType[tyname]->req;
+    int siz = NameType[tyname]->size;
+    now = (now + req - 1) / req * req; //对齐
+    New.begin = now;
+    New.ty = *NameType[tyname];
+    New.name = elname;
+    els[++elen] = New;
+    NameEle[elname] = &els[elen]; //一样，不能用 &New
+    AddrEle[{now, now + siz - 1}] = &els[elen];
+    now += siz;
+}
+接下来就是地址部分了
+如何通过元素查找地址？
+简单，遍历拆分一下输入的变量，然后不断迭代深入即可
+int VisitEl(string el) {
+    queue <string> q;
+    string s;
+    for (char c : el) {
+        if (c == '.') {
+            q.push(s);
+            s = "";
+        } else s += c;
+    }
+    q.push(s);
+    int pos = NameEle[q.front()]->begin;
+    Type* tpe = &NameEle[q.front()]->ty;
+    q.pop();
+    while (!q.empty()) { //遍历找子元素
+        string Name = q.front();
+        q.pop();
+        for (int i = 0; i < tpe->types.size(); i++) {
+            Type* v = tpe->types[i];
+            pos = (pos + v->req - 1) / v->req * v->req;
+            if (tpe->names[i] == Name) { //找到了
+                tpe = v;
+                break;
+            }
+            else pos += v->size;
+        }
+    }
+    return pos;
+}
+如何通过地址查找元素呢
+也很简单，先遍历每个元素，看有没有包含了地址的，有就深入
+string VisitAddr(int addr) {
+    if (addr < 0 || addr >= now) return "ERR";
+    Element* e = nullptr;
+    for (auto &v : AddrEle) {
+        if (addr < v.first.first || addr > v.first.second) continue; //不在范围内
+        e = v.second;
+        break; //找到了
+    }
+    if (!e) return "ERR";
+    int pos_goal = addr - e->begin, pos_s = 0, pos_t = 0;
+    Type* Tp = &e->ty;
+    string elname = e->name;
+    while (!Tp->types.empty()) {
+        bool flag = 0;
+        for (int i = 0; i < Tp->types.size(); i++) {
+            Type* v = Tp->types[i];
+            int req = v->req;
+            pos_s = (pos_s + req - 1) / req * req;
+            pos_t = pos_s + v->size;
+            if (pos_s <= pos_goal && pos_goal < pos_t) {
+                elname += '.' + Tp->names[i];
+                Tp = v;
+                flag = 1;
+                break;
+            } else {
+                pos_s = pos_t;
+            }
+        }
+        if (!flag) return "ERR";
+    }
+    if (elname.empty()) return "ERR";
+    return elname;
+}
+AC!
+
+---
+
+2026/8/28
+P9755 [CSP-S 2023] 种树
+赛时怼着 A 性质骗结果报 0
+默哀
+首先，设计函数 calc(x, l, r) 表示在 x 节点若在 [l, r] 内生长的最大高度
+若 v >= 0，显然可以直接从 l 长到 r，return b[x] * (r - l + 1) + c[x] * (l + r) * (r - l + 1) / 2
+（后半部分为(上底 + 下底) * 高 / 2）
+那么如果 v < 0，就需要分情况讨论，设 i 表示满足 b[x] + i * c[x] >= 1 的最大 i，则 i = (1 - b[x]) / c[x]
+易得：
+if (i < l) return r - l + 1;
+if (i > r) return (r - l + 1) * b[x] + (r - l + 1) * (l + r) / 2 * c[x];
+return b[x] * (i - l + 1) + c[x] * (l + i) * (i - l + 1) / 2 + r - i;
+
+inline __int128 calc(int x, __int128 l, __int128 r) { //计算第 x 个点在 [l, r] 的时间范围内生长的最大值
+    if (c[x] >= 0) return b[x] * (r - l + 1) + c[x] * (l + r) * (r - l + 1) / 2;
+    int i = (1 - b[x]) / c[x];
+    if (i < l) return r - l + 1;
+    if (i > r) return (r - l + 1) * b[x] + (r - l + 1) * (l + r) / 2 * c[x];
+    return b[x] * (i - l + 1) + c[x] * (l + i) * (i - l + 1) / 2 + r - i;
+}
+
+接下来考虑二分
+难点在于编写 check(x)（也就是求出能否在 x 以内完成）
+令 t[x] 表示最晚的合法种树时间
+只需要二分判断 calc(i, 1, t[i]) 是否成立即可求出 t[x]
+然后我们可以对 t 从小到大排序，然后依次枚举每个数，从这个数开始往上跳跳跳，直到跳到种过的点（用 vis 维护是否种过），这些点全部种一遍并记录种树时间 s ，然后取 s[i] + t[i] - 1 的最大值即可。这本质上是一个贪心，显然先做小 t 更优，因为事实上这个小 t 他时间更紧张，如果不理解可以试试调换位置，看会不会更优。
+显然，调换位置后（先做大，再做小）的时间一定 >= 调换位置前（先小后大）的时间
+还不理解？证
+设有 s[i] > s[j], t[i] < t[j]
+则显然必须要满足 s[i] <= t[i], s[j] <= t[j]
+然而交换后：s[j] <= t[i], s[i] <= t[j]
+s[i] <= t[i] 时 s[j] < t[i] 必定成立（s[i] > s[j]）
+同理，在 s[i] <= t[i] 时 s[i] 必定 < t[j]（t[i] < t[j]）
+所以，交换不劣，直接交换
+最后发现从小到大排序即可
+维护一个栈，来在树上跳，AC！
+附 check：
+bool check(int r) {
+    for (int i = 1; i <= n; i++) {
+        if (calc(i, 1, r) < a[i]) return 0; //无论如何无法达成
+        int L = 1, R = n, ans = 0;
+        while (L <= R) { //二分出左端点
+            int mid = (L + R) >> 1;
+            if (calc(i, mid, r) >= a[i]) {
+                L = mid + 1;
+                ans = mid;
+            }
+            else R = mid - 1;
+        }
+        id[i] = i;
+        t[i] = ans;
+        vis[i] = 0; //顺便清空一下（不是
+    }
+    sort(id + 1, id + n + 1, [](int A, int B){return t[A] < t[B];}); //排序
+    for (int i = 1, x = 0; i <= n; i++) { //链上种树
+        int u = id[i], tp = 0;
+        while (!vis[u]) {
+            sta[++tp] = u;
+            vis[u] = 1; //种树
+            u = fa[u];
+        }
+        while (tp) if (t[sta[tp--]] < ++x) return 0;
+    }
+    return 1;
+}
+
+---
+
+2026/8/28
+分情况讨论
+若 dist(x, y) 为偶数，显然将其中点作为根即可
+若 dist(x, y) >= 5，则可以将 x 在路径上的相邻点作为根，以 dist(x, y) - 2 的 k 跑一遍，这样会割掉 y 附近一条边让他成为祖先的儿子，x 同理，然后再 k = 1 跑一遍即可
+若 dist(x, y) == 3 且 deg[x] 和 deg[y] 其中一个 > 1，则可以以 x 旁边的不在路径上的点为根，以 dist(x, y) 的 k 跑一遍，再用 k = 1 跑一遍即可。原理类似
+可以证明其他情况（dist(x, y) == 1 或 dist(x, y) == 3 且 deg[x] 和 deg[y] 均 <= 1）都无解
+前面的就是 n - 1，后面的 dfs 出 fa 数组和 cnt（记录子节点有哪些是叶子），然后遍历所有 deg[i] == 1 的 i，不难得到，其配对数量为 cnt[fa[fa[i]]]。
+AC!
+
+
+---
+
+2026/8/30
+ABC473 D - Coefficient Stair
+这道题赛时卡我红温了
+思路很简单，DFS 即可
+但是直接裸 DFS 会被卡
+怎么办呢？
+我们需要一个小优化：当 p == n 的时候我们可以直接用 (k - sum) / n 来计算最后数量
+这样搜索树的大小可以小接近 n 倍
+这样就 A 了，真服了，QAQ
+
+---
+
+2026/8/30
+ABC473 E - K-Divisible Subarrays
+这道题是不难的
+虽然他是 E
+首先，我们观察样例解释可知，所求为子段和能被 k 整除的数量，翻译器翻译成了子序列（（（（
+子段和怎么求？答案是前缀和，pre[r] - pre[l - 1] 即为 [l, r] 的和，若 pre[r] - pre[l - 1] 能被 k 整除，则其必定模 k 同余
+然后，我们的任务相当于将整个序列分成一些子段，要求最大化满足其首 pre 和尾部的 pre 相同的数量。所以不妨存储每一个 i，其后面出现的 pre 值与他相同的下标。然后将其存入二元组 {i, r[i]} 中。问题变成了如何在这个序列中尽可能多的选择这个 {i, r[i]} 使其不重叠（首与尾可以重叠，因为这是半开区间）。思考良久之后，我回想起了 P1803 凌乱的yyy / 线段覆盖。考虑到 r[i] 右端点越靠前，意味着选择的余地就越多。所以贪心的按照 r[i] 从小到大排序，并依次覆盖每个区间，统计答案即可。AC!
+实现中还有我调了很久的细节，大概说一说：
+1. 赛时犹豫了很久要不要特判 pre[i] = 0，a[i] = 0，以及末尾无相同 pre 的情况。经过不断测试与微调，答案是：pre[i] = 0，a[i] = 0 是不需要特判的，a[i] = 0 就会让 pre[i - 1] = pre[i]，所以已经统计了，pre[i] = 0 等同于选择 1 ~ i 的所有元素，其和为 0，这启发我们新建一个 pre[0] = 0。问题解决。至于末尾无相同 pre，经试验，处理方法非常简单：直接排除这种情况，不加入二元组即可。
+2. 还有实现细节：
+int l = 1;
+while (l <= tp) {
+    ans++;
+    int o = t[l].first;
+    while (l <= tp && t[l].second < o) l++;
+}
+这里最开始写了个 i 存放数组下标，但后来想了想改成二元组下标了，因为维护方便。然后 t[l].second < o，这里注意是 <，因为说了，线段的头和尾都是可以重复覆盖的，所以 t[l].second = o 应该纳入讨论范围，此时不能直接 l++ 跳掉。
+3. 下次 D 题做快点……都没时间做 E 了 QAQ
+
+---
+
+2026/8/30
+P17333 「TPOI-2C」Secret Illumination
+开学前的最后一篇复盘日记
+如何构造？
+考虑升序，这样每个数都有固定 (i - 1) 倍的贡献，很好维护
+显然，当 a[i] = inf - n + i 时取得最大贡献
+其中 inf = 1e9，如果 k 大于这个数，直接输出 −1 即可。
+不妨把序列分为前 m 个数和后 n − m 个 1，这样后面这些数对于答案是没有贡献的，前 m 个数能达到的最大值为 f(m) = \sum_{i = 1}^{m}{(i - 1)(inf − m + i)}
+令第 i 个数为 i + x[i]，则原式变为 f(m) = \sum_{i = 1}^{m}{(i - 1)(i + x[i])}，二分答案 + 一点点算术即可 AC!
