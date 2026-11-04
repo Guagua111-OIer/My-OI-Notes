@@ -6501,3 +6501,38 @@ for (int i = 0; i <= 800000; i++) {
 cout << ans;
 一直卡这个转移，一定要注意转移时始终是 j - s[i]，不会随着 s[i] 正负性改变。然后一定要加这个 if (f[i] < 0 || i - tgt < 0) 的判断。
 AC!
+
+---
+
+2026/11/4
+CSP-S 2026 T1 能量水晶 / crystal
+代码很简单，考虑贪心，排序后水晶能量落差比较小，那么自然需要的操作数也最少。我们发现如果你需要将 l ~ r 的能量操作到一致，那么总操作次数为 a[r] - a[l]/*第一个*/ + a[r] - a[l + 1]/*第二个*/ + ... + a[r] - a[r - 1]
+a[r] 出现了 r - 1 - l + 1 = r - l 次，后面的是 - (a[l] + a[l + 1] + ... + a[r - 1]) = - (sum[r - 1] - sum[l - 1])，于是我们就可以 O(1) 计算区间的操作次数了。然后注意到区间越长，操作次数越多。所以这个满足单调性，考虑双指针。O(n) 即可。
+赛时公式推错了，废了，QAQAQAQAQAQAQAQAQ
+#include <bits/stdc++.h>
+#define int long long
+using namespace std;
+int n, k, a[500005], sum[500005], ans;
+
+int calc(int l, int r) {
+    return (r - l) * a[r] - (sum[r - 1] - sum[l - 1]);
+}
+
+signed main() {
+    ios::sync_with_stdio(0);
+    cin.tie(0);
+    cin >> n >> k;
+    int p = 1;
+    for (int i = 1; i <= n; i++) cin >> a[i];
+    sort(a + 1, a + n + 1);
+    for (int i = 1; i <= n; i++) sum[i] = sum[i - 1] + a[i];
+    for (int i = 1; i <= n; i++) {
+        while (p <= n && calc(i, p) <= k) {
+            ans = max(ans, p - i + 1);
+            p++;
+        }
+    }
+    cout << ans;
+    return 0;
+}
+AC!
