@@ -6536,3 +6536,43 @@ signed main() {
     return 0;
 }
 AC!
+
+---
+
+2026/11/5
+出分了
+CSP-J 90 + 100 + 100 + 0 = 290
+CSP-S 100 + 44 + 0 + 0 = 144
+
+---
+
+2026/11/5
+CSP-J 2026 T4 纸牌游戏 / card
+我们可以将每个 i 连到 lst[a[i]] + 1 上，lst 是最后一次出现的位置
+因为在 lst[a[i]] 后面，i 不会被收走，所以可以视为新开的一个局面，于是我们令 sz[i] 是保 i 的局数，并把 sz[i] -> sz[lst[a[i]] + 1] 上，AC!
+Code:
+#include <bits/stdc++.h>
+#define int long long
+using namespace std;
+int n, m, a[500005], fa[500005], t[500005], sz[500005], ans[500005];
+
+signed main() {
+    cin >> n >> m;
+    for (int i = 1; i <= n; i++) {
+        cin >> a[i];
+        t[a[i]] = i;
+    }
+    for (int i = 1; i <= n; i++) {
+        fa[i] = t[a[i]] + 1;
+        sz[i] = 1;
+    }
+    for (int i = 1; i <= n; i++) {
+        ans[a[i]] += sz[i];
+        sz[fa[i]] += sz[i];
+    }
+    for (int i = 1; i <= m; i++) {
+        cout << ans[i] << ' ';
+    }
+    return 0;
+}
+AC!
