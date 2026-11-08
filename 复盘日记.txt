@@ -6586,3 +6586,46 @@ CSP-S 2026 T3 迁徙 / migrate
 于是设 f[i] 表示有多少 l 使 [l, i] 路线唯一，g[i] 类似，是 [i, r] 的路线。转移详见题解，然后利用枚举 v = u + 1 来统计答案。
 注意转移时与统计有很多分类讨论，还有很多类似 pre[i] == i 的特判，一定要注意，而且要开 ll。总的来说，是一道非常考验注意力的题目。
 AC!
+
+---
+
+2026/11/8
+ABC483 D - Glitchy Robot
+比赛快结束时想出思路结果线段树细节炸了（lzy），赛后才调出来的一道题
+首先我们注意到由于机器人无法跳跃，其移动过程必然连续，也就是到过的位置必然形成一个区间。
+所以我们对移动序列前缀和，区间左端点显然为前缀和 min，右端点显然为 max。每次修改一个数值在前缀和中都会影响到后续所有数值。区间加减整体极值，线段树，启动！
+偷懒小技巧：因为是整体查询，所以不用写 query，直接用 t[1] 的值即可。
+update 和普通的一样，这里展示 pushup 和 pushdown（虽然也和普通的一样）
+void pushup(int u) {
+    t[u].mx = max(t[ls].mx, t[rs].mx);
+    t[u].mn = min(t[ls].mn, t[rs].mn);
+}
+
+void pushdown(int u) {
+    if (t[u].lzy) {
+        t[ls].mn += t[u].lzy;
+        t[rs].mn += t[u].lzy;
+        t[ls].mx += t[u].lzy;
+        t[rs].mx += t[u].lzy;
+        t[ls].lzy += t[u].lzy;
+        t[rs].lzy += t[u].lzy;
+        t[u].lzy = 0;
+    }
+}
+然后主函数直接
+int ans = 0;
+for (int i = 0; i <= n; i++) {
+    update(1, i, n, -2 * a[i]);
+    ans = max(ans, t[1].mx - t[1].mn + 1);
+    update(1, i, n, 2 * a[i]);
+}
+cout << ans;
+即可。
+细节（赛时调出来的）
+1. 不改也可以，所以 i 从 0 开始
+2. 又双叒叕忘调用 pushup 和 pushdown 了
+3. 四倍空间
+细节（赛后的）
+1. lzy 又双叒叕写成 = 了，一定要记住，区间赋值 lzy = k，加法 lzy += k，乘法 lzy *= k。
+没了（哭）
+AC!
