@@ -6629,3 +6629,25 @@ cout << ans;
 1. lzy 又双叒叕写成 = 了，一定要记住，区间赋值 lzy = k，加法 lzy += k，乘法 lzy *= k。
 没了（哭）
 AC!
+
+---
+
+2026/11/9
+P14419 [JOISC 2014] 有趣的家庭菜园 / Growing Vegetables is Fun
+思路想错了
+发现结果序列一定是单峰，所以我们可以维护 L[i], R[i] 表示 i 左边与右边比他大（需要与他交换）的数字数量。每个数字选择代价最小的交换方式即可。
+for (int i = 1; i <= n; i++) {
+    l[i] = (i - 1) - query(a[i]);
+    update(a[i]);
+}
+memset(t, 0, sizeof(t));
+for (int i = n; i >= 1; i--) {
+    r[i] = (n - i) - query(a[i]);
+    update(a[i]);
+}
+int ans = 0;
+for (int i = 1; i <= n; i++) ans += min(l[i], r[i]);
+cout << ans;
+1. 记住树状数组 Update + Query -
+2. 开 long long！
+AC!
